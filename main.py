@@ -36,11 +36,3 @@ def main():
 
 
 main()
-
-
-# var = men_category()
-# for i in var:
-#     print(i)
-
-# r = requests.get(page_url)
-# print(r.status_code)
