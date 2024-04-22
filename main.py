@@ -14,6 +14,15 @@ def men_category():
     return href_list
 
 
+def product_details(product_urls):
+    for product_url in product_urls:
+        print(product_url)
+        resp = requests.get(product_url)
+        if resp.ok:
+            print("Success")
+        break
+
+
 def items(category):
     params = category.split('?')[-1] + '&limit=40'
     url = 'https://shop.adidas.jp/f/v1/pub/product/list?' + params
@@ -22,11 +31,12 @@ def items(category):
         return {}
     resp = resp.json()
     list_of_items = resp['articles_sort_list']
-    print(list_of_items)
-    print(len(list_of_items))
     time.sleep(2)
-    # print(params)
-
+    product_urls = [
+        f'https://shop.adidas.jp/products/{item}/' for item in list_of_items
+    ]
+    print(product_urls)
+    return product_details(product_urls)
 
 
 def main():
