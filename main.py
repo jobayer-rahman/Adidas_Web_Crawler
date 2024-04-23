@@ -5,20 +5,18 @@ from bs4 import BeautifulSoup
 page_url = 'https://shop.adidas.jp/men/'
 
 
-def get_details(page_url, tag, selector):
+def get_details(content, tag, selector):
     try:
-        resp = requests.get(page_url)
-        soup = BeautifulSoup(resp.text, 'html.parser')
+        soup = BeautifulSoup(content.text, 'html.parser')
         text = soup.find(tag, class_=selector)
         return text.text
     except Exception:
         return ""
 
 
-def get_available_size(page_url, tag, selector):
+def get_available_size(content, tag, selector):
     try:
-        resp = requests.get(page_url)
-        soup = BeautifulSoup(resp.text, 'html.parser')
+        soup = BeautifulSoup(content.text, 'html.parser')
         size = soup.find(tag, class_=selector)
         all_sizes = ' '.join(size.stripped_strings)
         return all_sizes
@@ -26,10 +24,9 @@ def get_available_size(page_url, tag, selector):
         return ""
 
 
-def get_breadcrumbs(page_url, tag, selector):
+def get_breadcrumbs(content, tag, selector):
     try:
-        resp = requests.get(page_url)
-        soup = BeautifulSoup(resp.text, 'html.parser')
+        soup = BeautifulSoup(content.text, 'html.parser')
         bread = soup.find(tag, class_=selector)
         breadcrumbs = [item.text.strip() for item in bread.find_all("li")]
         return ' '.join(breadcrumbs)
@@ -41,28 +38,25 @@ def men_category():
     resp = requests.get(page_url)
     soup = BeautifulSoup(resp.text, 'html.parser')
     elements = soup.find_all('a', class_='lpc-teaserCarousel_link')
-    # print(elements)
     href_list = [element['href'] for element in elements]
     return href_list
 
 
 def product_details(product_urls):
     for product_url in product_urls:
+        time.sleep(0.3)
+        content = requests.get(product_url)
         details = {
             'url': product_url,
-            'breadcrumb': get_breadcrumbs(product_url, 'ul', 'breadcrumbList'),
-            'category': get_details(product_url, 'a', 'groupName'),
-            'product_name': get_details(product_url, 'h1', 'itemTitle'),
-            'price': get_details(product_url, 'span', 'price-value'),
-            'available_sizes': get_available_size(product_url, 'ul', 'sizeSelectorList'),
-            'title_description': get_details(product_url, 'h4', 'itemFeature'),
-            'general_description': get_details(product_url, 'div', 'commentItem-mainText'),
+            'breadcrumb': get_breadcrumbs(content, 'ul', 'breadcrumbList'),
+            'category': get_details(content, 'a', 'groupName'),
+            'product_name': get_details(content, 'h1', 'itemTitle'),
+            'price': get_details(content, 'span', 'price-value'),
+            'available_sizes': get_available_size(content, 'ul', 'sizeSelectorList'),
+            'title_description': get_details(content, 'h4', 'itemFeature'),
+            'general_description': get_details(content, 'div', 'commentItem-mainText'),
         }
         print(details)
-        # print(product_url)
-        # resp = requests.get(product_url)
-        # if resp.ok:
-        #     print("Success")
         break
 
 
