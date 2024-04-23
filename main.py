@@ -34,6 +34,24 @@ def get_breadcrumbs(content, tag, selector):
         return ""
 
 
+def get_sense(content, tag, selector):
+    try:
+        soup = BeautifulSoup(content.text, 'html.parser')
+        sense = soup.find(tag, class_=selector)
+        if not sense:
+            return None
+        else:
+            sense = sense.get('class')
+        record = 0
+        for sc in sense:
+            if sc.startswith('mod-marker_'):
+                record = sc.strip('mod-marker_').replace('_', '.')
+                break
+        return record
+    except Exception:
+        return ""
+
+
 def men_category():
     resp = requests.get(page_url)
     soup = BeautifulSoup(resp.text, 'html.parser')
@@ -53,6 +71,7 @@ def product_details(product_urls):
             'product_name': get_details(content, 'h1', 'itemTitle'),
             'price': get_details(content, 'span', 'price-value'),
             'available_sizes': get_available_size(content, 'ul', 'sizeSelectorList'),
+            'sense': get_sense(content, 'span', 'test-marker'),
             'title_description': get_details(content, 'h4', 'itemFeature'),
             'general_description': get_details(content, 'div', 'commentItem-mainText'),
         }
