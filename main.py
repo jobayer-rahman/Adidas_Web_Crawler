@@ -5,6 +5,16 @@ from bs4 import BeautifulSoup
 page_url = 'https://shop.adidas.jp/men/'
 
 
+def get_details(page_url, tag, selector):
+    try:
+        resp = requests.get(page_url)
+        soup = BeautifulSoup(resp.text, 'html.parser')
+        text = soup.find(tag, class_=selector)
+        return text.text
+    except Exception:
+        return ""
+
+
 def men_category():
     resp = requests.get(page_url)
     soup = BeautifulSoup(resp.text, 'html.parser')
@@ -16,10 +26,18 @@ def men_category():
 
 def product_details(product_urls):
     for product_url in product_urls:
-        print(product_url)
-        resp = requests.get(product_url)
-        if resp.ok:
-            print("Success")
+        details = {
+            'url': product_url,
+            'category': get_details(product_url, 'a', 'groupName'),
+            'product_name': get_details(product_url, 'h1', 'itemTitle'),
+            'price': get_details(product_url, 'span', 'price-value'),
+            'title_of_description': get_details(product_url, 'h4', 'itemFeature')
+        }
+        print(details)
+        # print(product_url)
+        # resp = requests.get(product_url)
+        # if resp.ok:
+        #     print("Success")
         break
 
 
