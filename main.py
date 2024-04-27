@@ -1,9 +1,57 @@
+import os
+import openpyxl
 import requests
 import time
 from json import loads
 from bs4 import BeautifulSoup
 
 page_url = 'https://shop.adidas.jp/men/'
+
+
+class ExcelWriter:
+    headers = {}
+    def __init__(self, filename):
+        self.filename = filename
+        if os.path.exists(filename):
+            self.workbook = openpyxl.load_workbook(filename)
+        else:
+            self.workbook = openpyxl.Workbook()
+            default_sheet = self.workbook.active
+            self.workbook.remove(default_sheet)
+        self.worksheets = {ws.title: ws for ws in self.workbook.worksheets}
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.save()
+
+    def add_worksheet(self, title):
+        if title not in self.worksheets:
+            worksheet = self.workbook.create_sheet(title=title)
+            self.worksheets[title] = worksheet
+            ExcelWriter.headers[title] = False
+        else:
+            worksheet = self.worksheets[title]
+        return worksheet
+
+    def write_data(self, worksheet, data):
+
+        if data['reviews'] is not '':
+            data['reviews'] = '\n'.join([str(d) for d in data['reviews']])
+
+        if not ExcelWriter.headers[worksheet]:
+            ExcelWriter.headers[worksheet] = True
+            headers = list(data.keys()) if isinstance(data, dict) else list(data[0].keys())
+            self.worksheets[worksheet].append(headers)
+        if isinstance(data, dict):
+            self.worksheets[worksheet].append([data[header] for header in data.keys()])
+        else:
+            for row in data:
+                self.worksheets[worksheet].append([row[header] for header in row.keys()])
+
+    def save(self):
+        self.workbook.save(self.filename)
 
 
 def get_details(content, tag, selector):
@@ -139,8 +187,7 @@ def get_product_reviews(as_json):
         .get('pdpInitialProps', {})
         .get('productIdInQuery', '')
     )
-    # to get more than 10 review increate the page and iterate over it,
-    # i have decided not do that
+    
     model = (
         as_json.get('props', {})
         .get('pageProps', {})
@@ -158,6 +205,16 @@ def get_product_reviews(as_json):
     reviews['length'] = length
     reviews['quality'] = quality
     reviews['comfort'] = comfort
+    return reviews
+
+
+def build_reviews(reviews, related_for):
+    if not reviews:
+        return ''
+    for review in reviews:
+        review['author'] = review['author']['name']
+        review['reviewRating'] = review['reviewRating']['ratingValue']
+        # review['related_for'] = related_for
     return reviews
 
 
@@ -198,8 +255,11 @@ def product_details(product_urls):
             'length': reviews['length'],
             'quality': reviews['quality'],
             'comfort': reviews['comfort'],
+            'reviews': build_reviews(reviews['reviewSeoLd'], product_url),
         }
         print(details)
+        with ExcelWriter(filename='addidas.xlsx') as ew:
+            ew.write_data('details', details)
         break
 
 
@@ -221,6 +281,8 @@ def items(category):
 
 def main():
     categories = men_category()
+    with ExcelWriter(filename='addidas.xlsx') as ew:
+        ew.add_worksheet('details')
     for category in categories:
         items(category)
 
