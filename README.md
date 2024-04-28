@@ -7,7 +7,7 @@ This Python project designed for extracting data from the Adidas website.
 
 To get started with Adidas Crawl, follow these simple steps:
 
-- **First you need to install python 3.x in your local machine.**
+- **First you need to install python 3.x in your local machine. I am using 3.8 in my system.**
 - **Clone the repository :**
 
 ```bash
@@ -29,5 +29,7 @@ python3 -m pip install -r requirements.txt
 ```bash
 python main.py
 ```
+
+- **It will generate a file named addidas.xlsx**
 
 ### If you face any issue, feel free to contact with me.  
