@@ -37,7 +37,7 @@ class ExcelWriter:
 
     def write_data(self, worksheet, data):
 
-        if data['reviews'] is not '':
+        if data['reviews'] != '':
             data['reviews'] = '\n'.join([str(d) for d in data['reviews']])
 
         if not ExcelWriter.headers[worksheet]:
@@ -72,13 +72,23 @@ def get_available_size(content, tag, selector):
     except Exception:
         return ""
 
+def get_itemization(content, tag, selector):
+    try:
+        soup = BeautifulSoup(content.text, 'html.parser')
+        size = soup.find(tag, class_=selector)
+        all_sizes = ' '.join(size.stripped_strings)
+        return all_sizes
+    except Exception:
+        return ""
+
 
 def get_breadcrumbs(content, tag, selector):
     try:
         soup = BeautifulSoup(content.text, 'html.parser')
         bread = soup.find(tag, class_=selector)
         breadcrumbs = [item.text.strip() for item in bread.find_all("li")]
-        return ' '.join(breadcrumbs)
+        breadcrumbs = ' / '.join(breadcrumbs)
+        return breadcrumbs.replace("iconArrowCircleLeft", "")
     except Exception:
         return ""
 
@@ -116,6 +126,37 @@ def get_attribute(soup_item, attribute):
     if not soup_item:
         return None
     return soup_item.get(attribute)
+
+
+def build_tale_size(tale_size):
+    if not tale_size:
+        return ''
+    headers = tale_size['header']['0'].values()
+    headers = ['measure'] + [header.get('value') for header in headers if header.get('value')]
+    data = [','.join(headers)]
+    for body in tale_size['body']:
+        _data = ','.join(each.get('value') for each in tale_size['body'][body].values())
+        data.append(_data)
+    return '/'.join(data)
+
+
+def get_tale_size(as_json=None):
+    code = (
+        as_json.get('props', {})
+        .get('pageProps', {})
+        .get('apis', {})
+        .get('pdpInitialProps', {})
+        .get('detailApi', {})
+        .get('product', {})
+        .get('article', {})
+        .get('modelCode', '')
+    )
+    url = 'https://shop.adidas.jp/f/v1/pub/size_chart/{}'.format(code)
+    response = requests.get(url)
+    if not response.ok:
+        return {}
+    tale_size = response.json().get('size_chart', {}).get('0', {})
+    return build_tale_size(tale_size)
 
 
 def get_product_default_images(content, as_json=''):
@@ -228,7 +269,7 @@ def men_category():
 
 def product_details(product_urls):
     for product_url in product_urls:
-        time.sleep(0.3)
+        time.sleep(2)
         content = requests.get(product_url)
         try:
             content_decode = content.content.decode()
@@ -248,6 +289,8 @@ def product_details(product_urls):
             'sense': get_sense(content, 'span', 'test-marker'),
             'title_description': get_details(content, 'h4', 'itemFeature'),
             'general_description': get_details(content, 'div', 'commentItem-mainText'),
+            'itemization': get_itemization(content, 'ul', 'articleFeatures'),
+            'tale_size': get_tale_size(as_json),
             'review_count': reviews['reviewCount'],
             'avg_rev': reviews['avg_rev'],
             'percentage': reviews['percentage'],
@@ -260,7 +303,7 @@ def product_details(product_urls):
         print(details)
         with ExcelWriter(filename='addidas.xlsx') as ew:
             ew.write_data('details', details)
-        break
+        # break
 
 
 def items(category):
