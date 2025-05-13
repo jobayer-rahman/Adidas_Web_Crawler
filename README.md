@@ -1,5 +1,4 @@
 # Adidas Web Crawler
-
 This Python project designed for extracting data from the Adidas website.
 
 
